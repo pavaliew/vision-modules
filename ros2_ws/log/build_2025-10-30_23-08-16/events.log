@@ -1,0 +1,67 @@
+[0.000000] (-) TimerEvent: {}
+[0.000572] (ai_package) JobQueued: {'identifier': 'ai_package', 'dependencies': OrderedDict()}
+[0.001019] (ai_package) JobStarted: {'identifier': 'ai_package'}
+[0.099504] (-) TimerEvent: {}
+[0.200084] (-) TimerEvent: {}
+[0.300629] (-) TimerEvent: {}
+[0.401153] (-) TimerEvent: {}
+[0.501693] (-) TimerEvent: {}
+[0.602187] (-) TimerEvent: {}
+[0.702709] (-) TimerEvent: {}
+[0.803312] (-) TimerEvent: {}
+[0.903846] (-) TimerEvent: {}
+[1.004378] (-) TimerEvent: {}
+[1.104920] (-) TimerEvent: {}
+[1.205445] (-) TimerEvent: {}
+[1.305978] (-) TimerEvent: {}
+[1.406532] (-) TimerEvent: {}
+[1.469451] (ai_package) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'develop', '--editable', '--build-directory', '/home/jetson/ros2_ws/build/ai_package/build', '--no-deps', 'symlink_data'], 'cwd': '/home/jetson/ros2_ws/build/ai_package', 'env': {'LESSOPEN': '| /usr/bin/lesspipe %s', 'CUDA_LAUNCH_BLOCKING': '1', 'CONDA_PROMPT_MODIFIER': '', 'LANGUAGE': 'en_US:en', 'USER': 'jetson', 'LC_TIME': 'en_US.UTF-8', 'XDG_SESSION_TYPE': 'x11', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/aarch64-linux-gnu:/opt/ros/humble/lib:/usr/local/lib:/usr/local/cuda-12.6/lib64:', 'HOME': '/home/jetson', 'CONDA_SHLVL': '0', 'OLDPWD': '/home/jetson', 'DESKTOP_SESSION': 'ubuntu', 'JETSON_L4T': '36.4.7', 'ROS_PYTHON_VERSION': '3', 'GNOME_SHELL_SESSION_MODE': 'ubuntu', 'GTK_MODULES': 'gail:atk-bridge', 'JETSON_MODEL': 'NVIDIA Jetson Orin Nano Engineering Reference Developer Kit Super', 'LC_MONETARY': 'en_US.UTF-8', 'SYSTEMD_EXEC_PID': '2538', 'DBUS_SESSION_BUS_ADDRESS': 'unix:path=/run/user/1000/bus', 'COLORTERM': 'truecolor', '_CE_M': '', '_CONDA_ROOT': '/home/jetson/miniconda3', 'IM_CONFIG_PHASE': '1', 'COLCON_PREFIX_PATH': '/home/jetson/ros2_ws/install:/home/jetson/yahboom_ws/install', 'ROS_DISTRO': 'humble', 'GTK_IM_MODULE': 'ibus', 'LOGNAME': 'jetson', 'JETSON_MODULE': 'NVIDIA Jetson Orin Nano (4GB ram)', 'JETSON_SERIAL_NUMBER': '1423724364395', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'XDG_SESSION_CLASS': 'user', 'USERNAME': 'jetson', 'PYTORCH_CUDA_ALLOC_CONF': 'max_split_size_mb:128', 'TERM': 'xterm-256color', 'GNOME_DESKTOP_SESSION_ID': 'this-is-deprecated', '_CE_CONDA': '', 'ROS_LOCALHOST_ONLY': '0', 'WINDOWPATH': '2', 'PATH': '/home/jetson/miniconda3/condabin:/opt/ros/humble/bin:/usr/local/cuda-12.6/bin:/home/jetson/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin', 'SESSION_MANAGER': 'local/yahboom:@/tmp/.ICE-unix/2500,unix/yahboom:/tmp/.ICE-unix/2500', 'PAPERSIZE': 'letter', 'XDG_MENU_PREFIX': 'gnome-', 'LC_ADDRESS': 'en_US.UTF-8', 'GNOME_TERMINAL_SCREEN': '/org/gnome/Terminal/screen/3cc43442_341d_4a56_b356_900a257c316c', 'XDG_RUNTIME_DIR': '/run/user/1000', 'DISPLAY': ':0', 'LANG': 'en_US.UTF-8', 'XDG_CURRENT_DESKTOP': 'ubuntu:GNOME', 'LC_TELEPHONE': 'en_US.UTF-8', 'XMODIFIERS': '@im=ibus', 'XDG_SESSION_DESKTOP': 'ubuntu', 'XAUTHORITY': '/run/user/1000/gdm/Xauthority', 'LS_COLORS': 'rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:', 'JETSON_SOC': 'tegra234', 'GNOME_TERMINAL_SERVICE': ':1.100', 'SSH_AGENT_LAUNCHER': 'gnome-keyring', 'SSH_AUTH_SOCK': '/run/user/1000/keyring/ssh', 'ROS_DOMAIN_ID': '99', 'AMENT_PREFIX_PATH': '/home/jetson/ros2_ws/install/ai_package:/home/jetson/yahboom_ws/install/camera:/opt/ros/humble', 'CONDA_PYTHON_EXE': '/home/jetson/miniconda3/bin/python', 'SHELL': '/bin/bash', 'LC_NAME': 'en_US.UTF-8', 'QT_ACCESSIBILITY': '1', 'GDMSESSION': 'ubuntu', 'LESSCLOSE': '/usr/bin/lesspipe %s %s', 'CONDA_DEFAULT_ENV': '', 'LC_MEASUREMENT': 'en_US.UTF-8', 'GPG_AGENT_INFO': '/run/user/1000/gnupg/S.gpg-agent:0:1', '_CONDA_EXE': '/home/jetson/miniconda3/bin/conda', 'LC_IDENTIFICATION': 'en_US.UTF-8', 'QT_IM_MODULE': 'ibus', 'JETSON_CUDA_ARCH_BIN': '8.7', 'PWD': '/home/jetson/ros2_ws/build/ai_package', 'XDG_CONFIG_DIRS': '/etc/xdg/xdg-ubuntu:/etc/xdg', 'CONDA_EXE': '/home/jetson/miniconda3/bin/conda', 'XDG_DATA_DIRS': '/usr/share/ubuntu:/usr/share/gnome:/usr/local/share/:/usr/share/:/var/lib/snapd/desktop', 'PYTHONPATH': '/home/jetson/ros2_ws/build/ai_package/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/jetson/ros2_ws/install/ai_package/lib/python3.10/site-packages:/home/jetson/ros2_ws/build/ai_package:/home/jetson/ros2_ws/install/ai_package/lib/python3.10/site-packages:/home/jetson/yahboom_ws/install/camera/lib/python3.10/site-packages:/opt/ros/humble/lib/python3.10/site-packages:/opt/ros/humble/local/lib/python3.10/dist-packages:/usr/local/lib/python3.10/site-packages/:', 'LC_NUMERIC': 'en_US.UTF-8', 'CONDA_PREFIX': '', 'LC_PAPER': 'en_US.UTF-8', 'COLCON': '1', 'VTE_VERSION': '6800', 'JETSON_JETPACK': '', 'JETSON_P_NUMBER': 'p3767-0004'}, 'shell': False}
+[1.506643] (-) TimerEvent: {}
+[1.607154] (-) TimerEvent: {}
+[1.707713] (-) TimerEvent: {}
+[1.808264] (-) TimerEvent: {}
+[1.908815] (-) TimerEvent: {}
+[2.008796] (ai_package) StdoutLine: {'line': b'running develop\n'}
+[2.009255] (-) TimerEvent: {}
+[2.109623] (-) TimerEvent: {}
+[2.210138] (-) TimerEvent: {}
+[2.310641] (-) TimerEvent: {}
+[2.411239] (-) TimerEvent: {}
+[2.411766] (ai_package) StdoutLine: {'line': b'running egg_info\n'}
+[2.412078] (ai_package) StdoutLine: {'line': b'creating ai_package.egg-info\n'}
+[2.412353] (ai_package) StdoutLine: {'line': b'writing ai_package.egg-info/PKG-INFO\n'}
+[2.412854] (ai_package) StdoutLine: {'line': b'writing dependency_links to ai_package.egg-info/dependency_links.txt\n'}
+[2.413165] (ai_package) StdoutLine: {'line': b'writing entry points to ai_package.egg-info/entry_points.txt\n'}
+[2.413354] (ai_package) StdoutLine: {'line': b'writing requirements to ai_package.egg-info/requires.txt\n'}
+[2.413506] (ai_package) StdoutLine: {'line': b'writing top-level names to ai_package.egg-info/top_level.txt\n'}
+[2.413992] (ai_package) StdoutLine: {'line': b"writing manifest file 'ai_package.egg-info/SOURCES.txt'\n"}
+[2.418396] (ai_package) StdoutLine: {'line': b"reading manifest file 'ai_package.egg-info/SOURCES.txt'\n"}
+[2.419679] (ai_package) StdoutLine: {'line': b"writing manifest file 'ai_package.egg-info/SOURCES.txt'\n"}
+[2.422633] (ai_package) StdoutLine: {'line': b'running build_ext\n'}
+[2.423031] (ai_package) StdoutLine: {'line': b'Creating /home/jetson/ros2_ws/install/ai_package/lib/python3.10/site-packages/ai-package.egg-link (link to .)\n'}
+[2.424774] (ai_package) StdoutLine: {'line': b'Installing camera_publisher script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package\n'}
+[2.425124] (ai_package) StdoutLine: {'line': b'Installing field_object_detector script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package\n'}
+[2.425328] (ai_package) StdoutLine: {'line': b'Installing landing_takeoff_node script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package\n'}
+[2.425515] (ai_package) StdoutLine: {'line': b'Installing road_field_detector script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package\n'}
+[2.425699] (ai_package) StdoutLine: {'line': b'Installing sift_detector script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package\n'}
+[2.425881] (ai_package) StdoutLine: {'line': b'Installing stitcher script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package\n'}
+[2.426217] (ai_package) StdoutLine: {'line': b'\n'}
+[2.426351] (ai_package) StdoutLine: {'line': b'Installed /home/jetson/ros2_ws/build/ai_package\n'}
+[2.426464] (ai_package) StdoutLine: {'line': b'running symlink_data\n'}
+[2.426658] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/package.xml -> /home/jetson/ros2_ws/install/ai_package/share/ai_package\n'}
+[2.426791] (ai_package) StdoutLine: {'line': b'creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch\n'}
+[2.426975] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera2_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch\n'}
+[2.427141] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera0_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch\n'}
+[2.427288] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera_landing_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch\n'}
+[2.427427] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera1_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch\n'}
+[2.427579] (ai_package) StdoutLine: {'line': b'creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/config\n'}
+[2.427731] (ai_package) StdoutLine: {'line': b'creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/resource\n'}
+[2.427873] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/resource/ai_package -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/resource\n'}
+[2.428014] (ai_package) StdoutLine: {'line': b'creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/maps\n'}
+[2.428150] (ai_package) StdoutLine: {'line': b'creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/models\n'}
+[2.428285] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/models/yolov10s.pt -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/models\n'}
+[2.428420] (ai_package) StdoutLine: {'line': b'symbolically linking /home/jetson/ros2_ws/build/ai_package/models/yolo_s_v11_dropout_05_best.pt -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/models\n'}
+[2.509227] (ai_package) CommandEnded: {'returncode': 0}
+[2.511392] (-) TimerEvent: {}
+[2.550794] (ai_package) JobEnded: {'identifier': 'ai_package', 'rc': 0}
+[2.552989] (-) EventReactorShutdown: {}

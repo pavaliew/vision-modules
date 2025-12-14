@@ -1,0 +1,8 @@
+[console_scripts]
+camera_publisher = ai_package.camera.camera_publisher:main
+field_object_detector = ai_package.FlyingObjectsDetector.inference_node:main
+landing_takeoff_node = ai_package.LandingTakeoffSafety.landing_takeoff_node:main
+road_field_detector = ai_package.BorderControl.scv_cam:main
+sift_detector = ai_package.BorderControl.ssift_cam:main
+stitcher = ai_package.BorderControl.camstitcher:main
+

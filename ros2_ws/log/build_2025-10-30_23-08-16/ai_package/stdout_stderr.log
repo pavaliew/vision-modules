@@ -1,0 +1,35 @@
+running develop
+running egg_info
+creating ai_package.egg-info
+writing ai_package.egg-info/PKG-INFO
+writing dependency_links to ai_package.egg-info/dependency_links.txt
+writing entry points to ai_package.egg-info/entry_points.txt
+writing requirements to ai_package.egg-info/requires.txt
+writing top-level names to ai_package.egg-info/top_level.txt
+writing manifest file 'ai_package.egg-info/SOURCES.txt'
+reading manifest file 'ai_package.egg-info/SOURCES.txt'
+writing manifest file 'ai_package.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/jetson/ros2_ws/install/ai_package/lib/python3.10/site-packages/ai-package.egg-link (link to .)
+Installing camera_publisher script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package
+Installing field_object_detector script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package
+Installing landing_takeoff_node script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package
+Installing road_field_detector script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package
+Installing sift_detector script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package
+Installing stitcher script to /home/jetson/ros2_ws/install/ai_package/lib/ai_package
+
+Installed /home/jetson/ros2_ws/build/ai_package
+running symlink_data
+symbolically linking /home/jetson/ros2_ws/build/ai_package/package.xml -> /home/jetson/ros2_ws/install/ai_package/share/ai_package
+creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch
+symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera2_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch
+symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera0_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch
+symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera_landing_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch
+symbolically linking /home/jetson/ros2_ws/build/ai_package/launch/camera1_launch.py -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/launch
+creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/config
+creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/resource
+symbolically linking /home/jetson/ros2_ws/build/ai_package/resource/ai_package -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/resource
+creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/maps
+creating /home/jetson/ros2_ws/install/ai_package/share/ai_package/models
+symbolically linking /home/jetson/ros2_ws/build/ai_package/models/yolov10s.pt -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/models
+symbolically linking /home/jetson/ros2_ws/build/ai_package/models/yolo_s_v11_dropout_05_best.pt -> /home/jetson/ros2_ws/install/ai_package/share/ai_package/models

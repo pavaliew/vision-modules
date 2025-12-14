@@ -1,0 +1,1 @@
+/home/jetson/ros2_ws/src/ai_package/launch/camera2_launch.py

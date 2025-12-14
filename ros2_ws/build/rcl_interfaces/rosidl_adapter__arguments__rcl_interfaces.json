@@ -1,0 +1,26 @@
+{
+  "package_name": "rcl_interfaces",
+  "non_idl_tuples": [
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/FloatingPointRange.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/IntegerRange.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/ListParametersResult.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/Log.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/ParameterDescriptor.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/ParameterEventDescriptors.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/ParameterEvent.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/Parameter.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/ParameterType.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/ParameterValue.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/SetParametersResult.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/LoggerLevel.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:msg/SetLoggerLevelsResult.msg",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/DescribeParameters.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/GetParameters.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/GetParameterTypes.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/ListParameters.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/SetParametersAtomically.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/SetParameters.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/GetLoggerLevels.srv",
+    "/home/jetson/ros2_ws/src/rcl_interfaces/rcl_interfaces:srv/SetLoggerLevels.srv"
+  ]
+}
