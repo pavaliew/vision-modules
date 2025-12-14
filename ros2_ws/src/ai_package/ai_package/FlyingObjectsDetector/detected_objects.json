@@ -1,0 +1,226 @@
+[
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.818359375,
+                "bounding_box": {
+                    "x1": 0,
+                    "y1": 16,
+                    "x2": 3834,
+                    "y2": 1773
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.8466796875,
+                "bounding_box": {
+                    "x1": 0,
+                    "y1": 3,
+                    "x2": 3828,
+                    "y2": 1813
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.87939453125,
+                "bounding_box": {
+                    "x1": 0,
+                    "y1": 7,
+                    "x2": 3831,
+                    "y2": 1899
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.8701171875,
+                "bounding_box": {
+                    "x1": 3,
+                    "y1": 0,
+                    "x2": 3837,
+                    "y2": 1980
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.86767578125,
+                "bounding_box": {
+                    "x1": 6,
+                    "y1": 6,
+                    "x2": 3840,
+                    "y2": 2070
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.76611328125,
+                "bounding_box": {
+                    "x1": 9,
+                    "y1": 37,
+                    "x2": 3834,
+                    "y2": 1978
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": [
+            {
+                "class": "UAV",
+                "confidence": 0.79248046875,
+                "bounding_box": {
+                    "x1": 6,
+                    "y1": 18,
+                    "x2": 3840,
+                    "y2": 2028
+                }
+            }
+        ]
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    },
+    {
+        "detected_objects": []
+    }
+]

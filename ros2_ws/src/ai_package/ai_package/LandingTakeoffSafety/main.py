@@ -1,0 +1,285 @@
+import datetime
+import argparse
+import cv2
+import ultralytics
+import json
+import os
+from communication import MAVLinkCommunication
+
+
+__doc__ = '''Основной файл программного модуля анализа данных для обеспечения безопасности в зоне взлета / посадки на основе технического зрения и искусственного интеллекта'''
+
+
+
+def parse_arguments() -> argparse.ArgumentParser:
+    '''
+    Функция для парсинга аргументов, полученных при вызове через $ python main.py --example example ...
+    
+    :return: Объект с собранными аргументами
+    :rtype: argparse.ArgumentParser
+    '''
+
+    parser = argparse.ArgumentParser(description='landing-takeoff-safety')
+    parser.add_argument('--data_type', action='store_true', help='Тип входных файлов: Файлы, если --data_type указан как параметр при запуске, иначе - Видеопоток с девайса.')
+    parser.add_argument('--data', type=str, required=True, help='Расположение данных.')
+    parser.add_argument('--weights_path', type=str, required=True, help='Расположение файла с весами модели.')
+    parser.add_argument('--roi', type=str, required=True, help='Region-of-Interest "x,y,w,h".')
+    parser.add_argument('--output_path', type=str, required=True, help='Путь к результирующему JSON файлу.')
+    parser.add_argument('--visualization', action='store_true', help='Если при запуске --visualization указан как параметр, то открывается дополнительное окно OpenCV с визуализацией распознавания.')
+    parser.add_argument('--video_output_path', type=str, required=True, help='Путь к результирующему mp4 файлу.')
+    parser.add_argument('--auto_loiter', action='store_true', help='Если указан как параметр при запуске, использует loiter')
+    return parser.parse_args()
+
+
+
+def load_yolo_model(weights_path: ultralytics.YOLO):
+    '''
+    Функция загрузки метода и весов для дальнейшей детекции из библиотеки ultralytics
+    
+    :param weights_path: Путь к файлу с весами
+    :return: Импортированная через ultralytics модель
+    '''
+    return ultralytics.YOLO(model=weights_path)
+
+
+
+def detect_objects_in_files(model: ultralytics.YOLO, data: str, roi: str, output_path:str, visualization: bool):
+    '''
+    Функция детекции объектов на изображениях и видео
+
+    :param model: Модель, импортированная через Ultralytics
+    :param data: Путь к папке с данными
+    :param roi: Строка, с координатами (двумя противоположными точками прямоугольника) региона интереса
+    :param output_path: Путь к результирующей папки
+    :param visualization: Флаг включения визуализации
+    :return: None
+    '''
+
+    # Преобразование ROI в кортеж
+    roi = tuple(map(int, roi.split(',')))
+
+    # Проверка, является ли источник директорией. Если да, то для анализа будут использованы все поддерживаемые изображения и видео
+    if os.path.isdir(data):
+        files = [os.path.join(data, f) for f in os.listdir(data) if f.endswith(('.jpg', '.jpeg', '.png', 'bmp', 'tiff', '.mp4', '.avi'))]
+    else:
+        files = [data] if data.endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.mp4', '.avi')) else []
+
+    results_list = []
+    frames = []
+    for file in files:
+        if file.endswith(('.jpg', '.jpeg', '.png')):
+            frame = cv2.imread(file)
+            if frame is None:
+                raise ValueError(f"Unable to load image {file}")
+            frames.append(frame)
+        else:
+            cap = cv2.VideoCapture(file)
+            if not cap.isOpened():
+                raise ValueError(f"Unable to open video source {file}")
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                frames.append(frame)
+            cap.release()
+    
+    # Если подключена визуализация, то открывается окно opencv
+    if visualization:
+        for frame_idx, frame in enumerate(frames):
+            # Обрезание ROI
+            x, y, w, h = roi
+            roi_frame = frame[y:y+h, x:x+w]
+
+            # Детекция объектов
+            results = model(roi_frame)
+
+            # Проверка наличия распознанных объектов в зоне интереса
+            if len(results) > 0 and len(results[0].boxes.xyxy) > 0:
+                for box, conf, cls in zip(results[0].boxes.xyxy, results[0].boxes.conf, results[0].boxes.cls):
+                    x1, y1, x2, y2 = map(int, box[:4])
+                    label = f'{model.names[int(cls)]} {conf:.2f}'
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                # Создание элемента списка JSON файла с результатами
+                json_data = {
+                    'file': file,
+                    'frame_idx': frame_idx,
+                    'detections': results[0].boxes.xyxy.cpu().numpy().tolist(),
+                    'scenario': "Замечено препятствие в проверяемой области, требуется присутствие оператора!"
+                }
+                results_list.append(json_data)
+
+                print("Замечено препятствие в проверяемой области, требуется присутствие оператора!")
+
+                # Сохранение всех результатов в результирующий JSON файл
+                with open(output_path, 'w') as json_file:
+                    json.dump(results_list, json_file, indent=4)
+
+            cv2.imshow('Landing / Takeoff safety', cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 255, 0), 3))
+            cv2.waitKey(1)
+        cv2.destroyAllWindows()
+    else:
+        for frame_idx, frame in enumerate(frames):
+            # Обрезание ROI
+            x, y, w, h = roi
+            roi_frame = frame[y:y+h, x:x+w]
+
+            # Детекция объектов
+            results = model(roi_frame)
+            
+            # Проверка наличия распознанных объектов в зоне интереса
+            if len(results[0].boxes.xyxy) > 0:
+                # Создание JSON файла с результатами
+                json_data = {
+                        'file': file,
+                        'frame_idx': frame_idx,
+                        'detections': results[0].boxes.xyxy.cpu().numpy().tolist(),
+                        'scenario': "Замечено препятствие в проверяемой области, требуется присутствие оператора!"
+                }
+                results_list.append(json_data)
+
+                print("Замечено препятствие в проверяемой области, требуется присутствие оператора!")
+
+                # Сохранение всех результатов в JSON файл
+                with open(output_path, 'w') as json_file:
+                    json.dump(results_list, json_file, indent=4)
+
+    # Сохранение всех результатов в один JSON файл
+    with open(output_path, 'w') as json_file:
+        json.dump(results_list, json_file, indent=4)
+
+
+
+def detect_from_device(model: ultralytics.YOLO, data: int, roi: str, output_path: str, video_output_path: str, auto_loiter=False):
+    '''
+    Функция детекции объектов на девайсе (камере). Визуализация проходит в любом случае
+    
+    :param model: Модель, импортированная через Ultralytics
+    :param data: Номер выбираемого девайса
+    :param roi: Строка, с координатами (двумя противоположными точками прямоугольника) региона интереса
+    :param output_path: Путь к результирующей папки
+    :param video_output_path: Путь к записанному видео
+    :return: None
+    '''
+
+    # Преобразование ROI в кортеж
+    roi = tuple(map(int, roi.split(',')))
+
+    # Открытие девайса (камеры)
+    cap = cv2.VideoCapture(int(data))
+    if not cap.isOpened():
+        raise ValueError("Unable to open device")
+    
+    # Получаем параметры камеры
+    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+
+    video_writer = None
+    
+    if video_output_path is None:
+        video_output_path = f"recorded_video_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.mp4"
+    
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    video_writer = cv2.VideoWriter(video_output_path, fourcc, fps, (frame_width, frame_height))
+    
+    if not video_writer.isOpened():
+        print(f"Warning: Could not open video writer for {video_output_path}")
+        video_writer = None
+
+    results_list = []
+    loiter_activated = False  # Флаг для однократной активации LOITER
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            x, y, w, h = roi
+            roi_frame = frame[y:y+h, x:x+w]
+
+            results = model(roi_frame, verbose=False)
+
+            # Проверка наличия объектов
+            if len(results) > 0 and len(results[0].boxes.xyxy) > 0:
+                detected_classes = []
+
+                for box, conf, cls in zip(results[0].boxes.xyxy, results[0].boxes.conf, results[0].boxes.cls):
+                    x1, y1, x2, y2 = map(int, box[:4])
+
+                    class_name = model.names[int(cls)]
+                    detected_classes.append(class_name)
+
+                    label = f'{class_name} {conf:.2f}'
+                    cv2.rectangle(roi_frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(roi_frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+                ## Отправка уведомления через MAVLink
+                #if mavlink_comm:
+                #    mavlink_comm.send_detection_alert(
+                #        detection_count=len(results[0].boxes.xyxy),
+                #        class_names=list(set(detected_classes))
+                #    )
+                #    
+                #    # Автоматическое переключение в LOITER (только один раз)
+                #    if auto_loiter:
+                #        mavlink_comm.change_to_loiter()
+                #        loiter_activated = True
+
+                # Создание результирующего элемента в JSON файле с привязкой по времени
+                json_data = {
+                    'time': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z%z'),
+                    'detections': results[0].boxes.xyxy.cpu().numpy().tolist(),
+                    'scenario': "Замечено препятствие в проверяемой области, требуется присутствие оператора!"
+                }
+                results_list.append(json_data)
+
+                print("Замечено препятствие в проверяемой области, требуется присутствие оператора!")
+
+                # Сохранение всех результатов в результирующий JSON файл
+                with open(output_path, 'w') as json_file:
+                    json.dump(results_list, json_file, indent=4)
+
+            # cv2.imshow('Landing / Takeoff safety', cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 3))
+            
+            video_writer.write(frame)
+
+            if cv2.waitKey(1)&0xFF==ord('q'):
+                break    
+    
+    except KeyboardInterrupt:
+        print("Сохранение данных")
+    
+    finally:
+        cap.release()
+        video_writer.release()        
+        cv2.destroyAllWindows()
+
+        print(f"Видео сохранено в: {video_output_path}")
+
+        # Сохранение всех результатов в один JSON файл
+        with open(output_path, 'w') as json_file:
+            json.dump(results_list, json_file, indent=4)
+
+
+
+def main():
+    '''Основная функция'''
+
+    args = parse_arguments()
+    model = load_yolo_model(args.weights_path)
+    # mavlink_comm = MAVLinkCommunication(port='/dev/ttyACM0') # Захардкоденный порт у джетсона
+
+    if args.data_type:
+        detect_objects_in_files(model, args.data, args.roi, args.output_path, args.visualization)
+    else:
+        detect_from_device(model, args.data, args.roi, args.output_path, args.video_output_path, args.auto_loiter)
+
+    # mavlink_comm.close()
+
+
+
+if __name__ == '__main__':
+    main()
