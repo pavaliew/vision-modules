@@ -4,7 +4,6 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PointStamped
-from std_msgs.msg import Header
 import cv2
 import numpy as np
 from collections import deque
@@ -16,6 +15,11 @@ from cv_bridge import CvBridge
 import pymavlink.mavutil as utility
 import pymavlink.dialects.v20.all as dialect
 
+from shapely.geometry import Polygon, Point
+import xml.etree.ElementTree as ET
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 class OptimizedDroneTracker(Node):
     def __init__(self, panorama_path, frame_interval=5, max_history=100):
         super().__init__('drone_tracker')
@@ -23,11 +27,10 @@ class OptimizedDroneTracker(Node):
         # Parameters
         self.declare_parameter('mavlink_enabled', True)
         self.declare_parameter('mavlink_port', '/dev/ttyACM0')
-        self.declare_parameter('position_update_interval', 1.0)  # Seconds between MAVLink updates
+        self.declare_parameter('kml_file_path', '')
         
         self.mavlink_enabled = self.get_parameter('mavlink_enabled').value
         self.mavlink_port = self.get_parameter('mavlink_port').value
-        self.position_update_interval = self.get_parameter('position_update_interval').value
         
         # Load panorama image
         self.panorama = cv2.imread(panorama_path)
@@ -39,13 +42,18 @@ class OptimizedDroneTracker(Node):
         self.frame_counter = 0
         self.max_history = max_history
         
-        # Initialize MAVLink connection
+        # KML zones
+        self.allowed_zones = []  # Разрешенные зоны
+        self.restricted_zones = []  # Запрещенные зоны
+        self.load_kml_zones()
+        
+        # MAVLink connection
         self.mavlink_connection = None
-        self.last_mavlink_update_time = 0
+        self.boundary_violation_active = False
         if self.mavlink_enabled:
             self.setup_mavlink_connection()
         
-        # Initialize feature detectors and matcher
+        # Feature detectors and matcher
         self.detector_0 = cv2.ORB_create(10000)
         self.detector_1 = cv2.ORB_create(nfeatures=5000)
         self.matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
@@ -61,7 +69,6 @@ class OptimizedDroneTracker(Node):
         # ROS2 publishers and subscribers
         self.position_pub = self.create_publisher(PointStamped, 'drone_position', 10)
         self.visualization_pub = self.create_publisher(Image, 'tracking_visualization', 10)
-        self.mavlink_status_pub = self.create_publisher(Header, 'mavlink_status', 10)
         
         # Subscribe to camera topic
         self.image_sub = self.create_subscription(
@@ -71,131 +78,166 @@ class OptimizedDroneTracker(Node):
             10
         )
         
-        # Create a timer for periodic MAVLink status updates
-        self.status_timer = self.create_timer(5.0, self.publish_mavlink_status)
-        
         self.init_log_files()
-        self.get_logger().info("Drone tracker initialized and ready")
-        self.get_logger().info(f"MAVLink enabled: {self.mavlink_enabled}")
+        self.get_logger().info("Drone tracker initialized")
+        self.get_logger().info(f"Allowed zones: {len(self.allowed_zones)}, Restricted zones: {len(self.restricted_zones)}")
+    
+    def load_kml_zones(self):
+        """Загрузка разрешенных и запрещенных зон из KML файла"""
+        kml_path = self.get_parameter('kml_file_path').value
+        
+        if not kml_path:
+            self.get_logger().info("KML file path not specified. Zone checking disabled.")
+            return
+            
+        if not os.path.exists(kml_path):
+            self.get_logger().warn(f"KML file not found: {kml_path}")
+            return
+            
+        try:
+            tree = ET.parse(kml_path)
+            root = tree.getroot()
+            ns = {'kml': 'http://www.opengis.net/kml/2.2'}
+            
+            for placemark in root.findall('.//kml:Placemark', ns):
+                name_elem = placemark.find('kml:name', ns)
+                zone_name = name_elem.text if name_elem is not None else "Unnamed zone"
+                
+                polygon_elem = placemark.find('.//kml:Polygon', ns)
+                if polygon_elem is not None:
+                    coords_elem = polygon_elem.find('.//kml:coordinates', ns)
+                    if coords_elem is not None and coords_elem.text:
+                        coord_text = coords_elem.text.strip()
+                        points = []
+                        
+                        for coord in coord_text.split():
+                            parts = coord.split(',')
+                            if len(parts) >= 2:
+                                x, y = float(parts[0]), float(parts[1])
+                                points.append((x, y))
+                        
+                        if len(points) >= 3:
+                            polygon = Polygon(points)
+                            
+                            # Определяем тип зоны по имени
+                            zone_name_lower = zone_name.lower()
+                            if 'forbidden' in zone_name_lower or 'restricted' in zone_name_lower or 'запрещен' in zone_name_lower:
+                                self.restricted_zones.append({
+                                    'name': zone_name,
+                                    'polygon': polygon,
+                                    'points': points
+                                })
+                                self.get_logger().info(f"Loaded RESTRICTED zone: {zone_name}")
+                            else:
+                                self.allowed_zones.append({
+                                    'name': zone_name,
+                                    'polygon': polygon,
+                                    'points': points
+                                })
+                                self.get_logger().info(f"Loaded ALLOWED zone: {zone_name}")
+            
+            self.get_logger().info(f"Loaded {len(self.allowed_zones)} allowed and {len(self.restricted_zones)} restricted zones")
+            
+        except Exception as e:
+            self.get_logger().error(f"Error loading KML: {e}")
+    
+    def check_position_validity(self, position):
+        """Проверяет валидность позиции относительно зон"""
+        if not self.allowed_zones and not self.restricted_zones:
+            return True, None  # Нет зон - всё разрешено
+        
+        point = Point(position[0], position[1])
+        
+        # Проверка на попадание в запрещенную зону
+        for zone in self.restricted_zones:
+            if zone['polygon'].contains(point):
+                return False, f"In restricted zone: {zone['name']}"
+        
+        # Проверка на попадание в разрешенную зону (если есть разрешенные зоны)
+        if self.allowed_zones:
+            in_allowed_zone = False
+            for zone in self.allowed_zones:
+                if zone['polygon'].contains(point):
+                    in_allowed_zone = True
+                    break
+            
+            if not in_allowed_zone:
+                return False, "Outside all allowed zones"
+        
+        return True, "In allowed airspace"
+    
+    def activate_loiter_mode(self):
+        """Активация режима LOITER через MAVLink"""
+        if self.mavlink_connection is None:
+            self.get_logger().error("MAVLink not connected, cannot activate LOITER")
+            return False
+        
+        try:
+            # Команда перехода в режим LOITER
+            msg = dialect.MAVLink_command_long_message(
+                target_system=self.mavlink_connection.target_system,
+                target_component=self.mavlink_connection.target_component,
+                command=dialect.MAV_CMD_NAV_LOITER_UNLIM,
+                confirmation=0,
+                param1=0,  # Empty
+                param2=0,  # Empty
+                param3=0,  # Empty
+                param4=0,  # Yaw angle (0 = current)
+                param5=0,  # Latitude (0 = current)
+                param6=0,  # Longitude (0 = current)
+                param7=0   # Altitude (0 = current)
+            )
+            self.mavlink_connection.mav.send(msg)
+            
+            # Статусное сообщение
+            status_msg = dialect.MAVLink_statustext_message(
+                severity=dialect.MAV_SEVERITY_WARNING,
+                text="BOUNDARY VIOLATION - ACTIVATING LOITER MODE".encode("utf-8")
+            )
+            self.mavlink_connection.mav.send(status_msg)
+            
+            self.get_logger().warn("LOITER mode activated via MAVLink")
+            return True
+            
+        except Exception as e:
+            self.get_logger().error(f"Error activating LOITER: {e}")
+            return False
     
     def setup_mavlink_connection(self):
-        """Настраивает соединение MAVLink с дроном"""
+        """Настраивает соединение MAVLink"""
         try:
-            self.get_logger().info(f"Connecting to MAVLink on port {self.mavlink_port}...")
             self.mavlink_connection = utility.mavlink_connection(
                 device=self.mavlink_port,
                 source_system=1,
                 source_component=0
             )
-            
-            # Wait for heartbeat with timeout
             self.mavlink_connection.wait_heartbeat(timeout=5)
-            self.get_logger().info(f"MAVLink connected! System: {self.mavlink_connection.target_system}, Component: {self.mavlink_connection.target_component}")
+            self.get_logger().info(f"MAVLink connected to {self.mavlink_port}")
         except Exception as e:
-            self.get_logger().error(f"Failed to connect to MAVLink: {e}")
+            self.get_logger().error(f"Failed to connect MAVLink: {e}")
             self.mavlink_connection = None
-    
-    def send_mavlink_position(self, position, timestamp=None):
-        """
-        Отправляет позицию дрона через MAVLink
-        
-        Args:
-            position: (x, y) координаты на панораме
-            timestamp: Временная метка
-        """
-        if self.mavlink_connection is None:
-            return False
-        
-        current_time = time.time()
-        if current_time - self.last_mavlink_update_time < self.position_update_interval:
-            return False
-        
-        try:
-            # Send position via STATUSTEXT
-            message_text = f"DRONE_POS: X={position[0]:.1f}, Y={position[1]:.1f}"
-            message = dialect.MAVLink_statustext_message(
-                severity=dialect.MAV_SEVERITY_INFO,
-                text=message_text.encode("utf-8")
-            )
-            self.mavlink_connection.mav.send(message)
-            
-            # Also send as GLOBAL_POSITION_INT (simplified for 2D)
-            msg = dialect.MAVLink_global_position_int_message(
-                time_boot_ms=int(current_time * 1000),
-                lat=int(position[0] * 1e7),  # Convert to degrees * 1e7
-                lon=int(position[1] * 1e7),  # Convert to degrees * 1e7
-                alt=0,
-                relative_alt=0,
-                vx=0,
-                vy=0,
-                vz=0,
-                hdg=0
-            )
-            self.mavlink_connection.mav.send(msg)
-            
-            self.last_mavlink_update_time = current_time
-            self.get_logger().info(f"MAVLink position sent: {message_text}")
-            return True
-            
-        except Exception as e:
-            self.get_logger().error(f"Error sending MAVLink position: {e}")
-            return False
-    
-    def send_statustext_to_gcs(self, message_text, severity=dialect.MAV_SEVERITY_INFO):
-        """
-        Отправляет сообщение STATUSTEXT на наземную станцию управления
-        """
-        if self.mavlink_connection is None:
-            return False
-        
-        try:
-            message = dialect.MAVLink_statustext_message(
-                severity=severity,
-                text=message_text.encode("utf-8")
-            )
-            self.mavlink_connection.mav.send(message)
-            self.get_logger().info(f'MAVLink status sent: {message_text}')
-            return True
-        except Exception as e:
-            self.get_logger().error(f"Error sending MAVLink status: {e}")
-            return False
-    
-    def publish_mavlink_status(self):
-        """Публикует статус MAVLink соединения"""
-        msg = Header()
-        msg.stamp = self.get_clock().now().to_msg()
-        msg.frame_id = "connected" if self.mavlink_connection else "disconnected"
-        self.mavlink_status_pub.publish(msg)
     
     def init_log_files(self):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_dir = "tracking_logs"
         os.makedirs(log_dir, exist_ok=True)
         
-        self.txt_log_path = os.path.join(log_dir, f"tracking_log_{timestamp}.txt")
-        with open(self.txt_log_path, 'w') as f:
-            f.write("Time, X Coordinate, Y Coordinate, MAVLinkSent\n")
-        
         self.csv_log_path = os.path.join(log_dir, f"tracking_log_{timestamp}.csv")
         with open(self.csv_log_path, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow(["Timestamp", "X", "Y", "MAVLinkSent"])
+            writer.writerow(["Timestamp", "X", "Y", "PositionValid", "ZoneStatus", "MAVLinkAction"])
     
-    def log_position(self, position, mavlink_sent):
+    def log_position(self, position, is_valid, zone_status, mavlink_action=""):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
         x, y = position
         
-        with open(self.txt_log_path, 'a') as f:
-            f.write(f"{timestamp}, {x:.2f}, {y:.2f}, {mavlink_sent}\n")
-        
         with open(self.csv_log_path, 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            writer.writerow([timestamp, f"{x:.2f}", f"{y:.2f}", mavlink_sent])
+            writer.writerow([timestamp, f"{x:.2f}", f"{y:.2f}", is_valid, zone_status, mavlink_action])
     
     def image_callback(self, msg):
-        """Process incoming image messages"""
+        """Обработка входящих изображений"""
         try:
-            # Convert ROS Image message to OpenCV format
             frame = self.bridge.imgmsg_to_cv2(msg, desired_encoding='bgr8')
         except Exception as e:
             self.get_logger().error(f"Error converting image: {str(e)}")
@@ -203,41 +245,54 @@ class OptimizedDroneTracker(Node):
         
         self.frame_counter += 1
         
-        # Skip frames based on interval
         if self.frame_counter % self.frame_interval != 0:
             return
         
-        # Process frame
         position = self.process_frame(frame)
         
-        # Publish position
         if position is not None:
-            # Send via MAVLink
-            mavlink_sent = False
-            if self.mavlink_enabled and self.mavlink_connection is not None:
-                mavlink_sent = self.send_mavlink_position(position)
+            # Проверка позиции
+            is_valid, zone_status = self.check_position_validity(position)
             
-            # Publish ROS 2 position
+            # Обработка нарушения границ
+            if not is_valid and not self.boundary_violation_active:
+                self.get_logger().error(f"BOUNDARY VIOLATION: {zone_status}")
+                
+                # Активация LOITER через MAVLink
+                if self.mavlink_enabled and self.mavlink_connection:
+                    loiter_activated = self.activate_loiter_mode()
+                    mavlink_action = "LOITER_ACTIVATED" if loiter_activated else "LOITER_FAILED"
+                else:
+                    mavlink_action = "MAVLINK_DISABLED"
+                
+                self.boundary_violation_active = True
+            elif is_valid and self.boundary_violation_active:
+                self.get_logger().info("Returned to allowed airspace")
+                self.boundary_violation_active = False
+                mavlink_action = ""
+            else:
+                mavlink_action = ""
+            
+            # Публикация позиции
             self.publish_position(position)
             
-            # Log position
-            self.log_position(position, mavlink_sent)
+            # Логирование
+            self.log_position(position, is_valid, zone_status, mavlink_action)
             
-            # Create and publish visualization
-            vis_image = self.get_visualization(frame, mavlink_sent)
+            # Визуализация
+            vis_image = self.get_visualization(frame, position, is_valid, zone_status)
             self.publish_visualization(vis_image, msg.header)
     
     def process_frame(self, frame):
+        """Обработка кадра и определение позиции"""
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         frame_kp, frame_des = self.detector_1.detectAndCompute(gray_frame, None)
         
         if frame_des is None or len(frame_kp) < 10:
-            self.get_logger().warn('Недостаточно ключевых точек')
             return self.last_position
         
         matches = self.matcher.match(self.pano_des, frame_des)
         if len(matches) < 10:
-            self.get_logger().warn('Мало совпадений')
             return self.last_position
         
         matches = sorted(matches, key=lambda x: x.distance)[:30]
@@ -246,7 +301,6 @@ class OptimizedDroneTracker(Node):
         
         H, _ = cv2.findHomography(dst_pts, src_pts, cv2.RANSAC, 5.0)
         if H is None:
-            self.get_logger().error('Ошибка гомографии')
             return self.last_position
         
         h, w = frame.shape[:2]
@@ -256,24 +310,20 @@ class OptimizedDroneTracker(Node):
         self.positions.append(panorama_center)
         self.last_position = panorama_center
         
-        self.get_logger().info(f"Позиция: X={panorama_center[0]:.1f}, Y={panorama_center[1]:.1f}")
-        
         return panorama_center
     
     def publish_position(self, position):
-        """Publish position as PointStamped message"""
+        """Публикация позиции дрона"""
         msg = PointStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = "panorama"
-        
         msg.point.x = float(position[0])
         msg.point.y = float(position[1])
         msg.point.z = 0.0
-        
         self.position_pub.publish(msg)
     
     def publish_visualization(self, cv_image, original_header):
-        """Publish visualization image"""
+        """Публикация визуализации"""
         try:
             vis_msg = self.bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")
             vis_msg.header = original_header
@@ -281,70 +331,66 @@ class OptimizedDroneTracker(Node):
         except Exception as e:
             self.get_logger().error(f"Error publishing visualization: {str(e)}")
     
-    def get_visualization(self, frame, mavlink_sent=False, scale=0.3):
-        if self.last_position is None:
-            vis = self.panorama.copy()
-        else:
-            vis = self.panorama.copy()
-            
-            # Draw tracking history
-            point_radius = 10
-            for i, pos in enumerate(self.positions):
-                color = (0, 255, 0) if i == len(self.positions)-1 else (0, 0, 200)
-                cv2.circle(vis, (int(pos[0]), int(pos[1])), point_radius, color, -1)
+    def get_visualization(self, frame, position, is_valid, zone_status, scale=0.3):
+        """Создание визуализации с зонами"""
+        vis = self.panorama.copy()
         
-        # Add current camera frame overlay
+        # Отрисовка разрешенных зон (зеленые)
+        for zone in self.allowed_zones:
+            points = np.array(zone['points'], dtype=np.int32)
+            cv2.polylines(vis, [points], isClosed=True, color=(0, 255, 0), thickness=2)
+            if points.size > 0:
+                centroid = np.mean(points, axis=0).astype(int)
+                cv2.putText(vis, f"A: {zone['name']}", (centroid[0], centroid[1]),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+        
+        # Отрисовка запрещенных зон (красные)
+        for zone in self.restricted_zones:
+            points = np.array(zone['points'], dtype=np.int32)
+            cv2.polylines(vis, [points], isClosed=True, color=(0, 0, 255), thickness=3)
+            if points.size > 0:
+                centroid = np.mean(points, axis=0).astype(int)
+                cv2.putText(vis, f"R: {zone['name']}", (centroid[0], centroid[1]),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        
+        # Отрисовка истории позиций
+        for i, pos in enumerate(self.positions):
+            color = (0, 255, 0) if is_valid else (0, 0, 255)
+            cv2.circle(vis, (int(pos[0]), int(pos[1])), 8, color, -1)
+        
+        # Текущий видеокадр
         small_frame = cv2.resize(frame, None, fx=scale, fy=scale)
         h, w = small_frame.shape[:2]
         vis[10:h+10, 10:w+10] = small_frame
         
-        # Add position text
-        if self.last_position is not None:
-            cv2.putText(vis, f"X: {self.last_position[0]:.1f}, Y: {self.last_position[1]:.1f}", 
-                       (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        # Информация о позиции
+        cv2.putText(vis, f"Position: {position[0]:.0f}, {position[1]:.0f}", 
+                   (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
         
-        # Add MAVLink status
-        if self.mavlink_enabled:
-            mavlink_color = (0, 255, 0) if self.mavlink_connection else (0, 0, 255)
-            mavlink_status = "MAVLink: Connected" if self.mavlink_connection else "MAVLink: Disconnected"
-            cv2.putText(vis, mavlink_status, (20, 90),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, mavlink_color, 2)
-            
-            if mavlink_sent:
-                cv2.putText(vis, "MAVLink: Position Sent", (20, 120),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+        # Статус зоны
+        status_color = (0, 255, 0) if is_valid else (0, 0, 255)
+        status_text = "IN ALLOWED ZONE" if is_valid else f"VIOLATION: {zone_status[:30]}"
+        cv2.putText(vis, status_text, (20, 70),
+                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
         
-        # Add ROS 2 status
-        cv2.putText(vis, "ROS 2: Active", (20, 150),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
-        
-        # Add timestamp
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        cv2.putText(vis, f"Time: {timestamp}", (20, 180),
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        # Статус MAVLink
+        if self.boundary_violation_active:
+            cv2.putText(vis, "LOITER ACTIVE", (20, 100),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
         
         return vis
     
     def destroy_node(self):
-        """Очистка ресурсов при завершении ноды"""
-        # Send final status message
-        if self.mavlink_enabled and self.mavlink_connection is not None:
-            self.send_statustext_to_gcs("Drone tracker shutting down", dialect.MAV_SEVERITY_INFO)
-        
-        self.get_logger().info(f"Drone tracker stopped. Logs saved to: {self.txt_log_path}")
-        self.get_logger().info(f"Total frames processed: {self.frame_counter}")
+        """Завершение работы"""
+        if self.boundary_violation_active:
+            self.get_logger().warn("Shutting down with active boundary violation")
+        self.get_logger().info(f"Processed {self.frame_counter} frames")
         super().destroy_node()
 
 def main(args=None):
     rclpy.init(args=args)
     
-    # Panorama image path - adjust as needed
     panorama_path = "panorama_output.jpg"
-    
-    # For ROS2 packages, consider using:
-    # from ament_index_python.packages import get_package_share_directory
-    # package_share_dir = get_package_share_directory('your_package_name')
-    # panorama_path = os.path.join(package_share_dir, 'panorama_output.jpg')
     
     try:
         tracker = OptimizedDroneTracker(
@@ -352,12 +398,7 @@ def main(args=None):
             frame_interval=10
         )
         
-        start_time = time.time()
         rclpy.spin(tracker)
-        elapsed_time = time.time() - start_time
-        
-        tracker.get_logger().info(f"Время выполнения: {elapsed_time:.2f} сек")
-        tracker.get_logger().info("Логи сохранены в 'tracking_logs'")
         
     except ValueError as e:
         print(f"Error: {e}")
